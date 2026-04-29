@@ -1,0 +1,49 @@
+# Go binaries and build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Compiled binary (the flareout binary itself).
+# Anchor to repo root so the pattern does NOT match cmd/flareout/ directory.
+/flareout
+/cmd/flareout/flareout
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Test coverage output
+coverage.out
+coverage.html
+
+# Module vendor directory (using Go modules, not vendoring)
+# vendor/
+
+# FlareOut user data directory — contains API tokens and local state
+# NEVER commit this
+.flareout/
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local development infrastructure — skill registry consumed by tooling.
+# Not part of the public project surface.
+.atl/
+
+# Archived SDD change history — kept locally for traceability and recovery,
+# but not part of the public-facing project documentation.
+# The canonical specs live in openspec/specs/ and openspec/config.yaml, which ARE committed.
+openspec/changes/archive/
+
+# go.sum must NOT be excluded — it is a security artifact
+# (do not add go.sum here)

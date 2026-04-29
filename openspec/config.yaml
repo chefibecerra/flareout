@@ -1,0 +1,79 @@
+schema: spec-driven
+
+context: |
+  Project: FlareOut — open-source CLI/TUI to manage Cloudflare DNS proxy state.
+  Stack (intended): Go + Bubbletea + Bubbles + Lipgloss (TUI), Cobra (CLI), cloudflare-go (API client).
+  Architecture: clean/hexagonal — domain (DNS records, zones), application (use cases), infra (CF client, snapshot store, audit log), interface (TUI screens + CLI subcommands).
+  Testing: Go `testing` + `teatest` for Bubbletea. TDD where viable.
+  Style: gofmt + golangci-lint (to be configured).
+  Distribution: single static binary, Homebrew tap planned.
+
+strict_tdd: true
+
+testing:
+  status: active
+  notes: |
+    Strict TDD activated 2026-04-29 after flareout-foundation Phase 9 verification gate
+    passed: `go test ./...` exits 0, TestMaskToken green, `go vet ./...` clean,
+    `golangci-lint run` clean (v2.11.4). All subsequent changes (flareout-list onward)
+    MUST follow test-before-implementation ordering — write the failing test first,
+    then the minimum implementation to make it pass.
+  test_runner:
+    framework: go test (built-in)
+    command: go test ./...
+  test_layers:
+    unit:
+      available: planned
+      tool: testing (stdlib)
+    integration:
+      available: planned
+      tool: net/http/httptest + fake Cloudflare adapter
+    e2e:
+      available: not_planned_v1
+      tool: —
+    tui:
+      available: planned
+      tool: github.com/charmbracelet/x/exp/teatest
+  coverage:
+    available: planned
+    command: go test -cover ./...
+  quality_tools:
+    linter:
+      available: planned
+      command: golangci-lint run
+    type_checker:
+      available: builtin
+      command: go vet ./...
+    formatter:
+      available: builtin
+      command: gofmt -w . / goimports -w .
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+    - For DNS-write features, require dry-run + audit log + snapshot story
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Safety scenarios are mandatory for any write path
+  design:
+    - Include sequence diagrams for complex flows (especially TUI state machines)
+    - Document architecture decisions with rationale
+    - Respect clean/hexagonal layering — no leaks from infra to domain
+  tasks:
+    - Group tasks by layer (domain → application → infra → interface)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+    - Tests come before implementation when strict_tdd is true
+  apply:
+    - Follow existing code patterns and conventions
+    - Bubbletea screens MUST be testable via teatest
+    - Cloudflare API calls go through a single adapter — no scatter
+    - Never log or persist API tokens
+  verify:
+    - Run tests if test infrastructure exists
+    - Compare implementation against every spec scenario
+    - For write paths, verify dry-run, audit log, and rollback are exercised
+  archive:
+    - Warn before merging destructive deltas (large removals)
