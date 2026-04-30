@@ -43,7 +43,7 @@ func NewListCmd(_ Dependencies) *cobra.Command {
 			if useJSON {
 				return writeJSON(cmd.OutOrStdout(), records)
 			}
-			return runTUI(cmd.Context(), records, appCtx.Logger)
+			return runTUI(cmd.Context(), records, appCtx, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Output JSON instead of launching the interactive TUI")

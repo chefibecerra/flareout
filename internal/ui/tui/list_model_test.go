@@ -200,3 +200,93 @@ func TestListModel_ErrorState_QQuits(t *testing.T) {
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }
+
+// --- Multi-select + apply intent (flareout-tui-toggle additions) ---
+
+// TestModel_SpaceMarksPendingForCursorRow drives Update() directly (not
+// through teatest) so the test can read the model's pending map after the
+// keystroke. Cursor starts at row 0 = r1 (Proxied=true), so the desired
+// state recorded must be the OPPOSITE (false).
+func TestModel_SpaceMarksPendingForCursorRow(t *testing.T) {
+	m := tui.New(twoRecords(), slog.Default())
+
+	nm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	got := nm.(tui.Model)
+
+	pending := got.Pending()
+	if len(pending) != 1 {
+		t.Fatalf("after space, pending size = %d, want 1", len(pending))
+	}
+	if desired, ok := pending["r1"]; !ok {
+		t.Errorf("pending missing key r1; got map %v", pending)
+	} else if desired != false {
+		t.Errorf("pending[r1] = %v, want false (flip of Proxied=true)", desired)
+	}
+	if got.WantsApply() {
+		t.Error("space alone must NOT set WantsApply()")
+	}
+}
+
+// TestModel_SpaceTwiceOnSameRowUnmarks verifies the toggle behavior.
+func TestModel_SpaceTwiceOnSameRowUnmarks(t *testing.T) {
+	m := tui.New(twoRecords(), slog.Default())
+
+	nm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	m = nm.(tui.Model)
+	nm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	m = nm.(tui.Model)
+
+	if got := len(m.Pending()); got != 0 {
+		t.Errorf("after two spaces on same row, pending size = %d, want 0", got)
+	}
+}
+
+// TestModel_AKeyQuitsAndSetsWantsApply verifies the apply-intent signal.
+func TestModel_AKeyQuitsAndSetsWantsApply(t *testing.T) {
+	m := tui.New(twoRecords(), slog.Default())
+
+	nm, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
+	got := nm.(tui.Model)
+
+	if !got.WantsApply() {
+		t.Error("after 'a', WantsApply() = false; want true")
+	}
+	if cmd == nil {
+		t.Error("after 'a', returned cmd is nil; want tea.Quit")
+	}
+}
+
+// TestModel_QKeyDoesNotSetWantsApply confirms cancel-on-quit semantics.
+func TestModel_QKeyDoesNotSetWantsApply(t *testing.T) {
+	m := tui.New(twoRecords(), slog.Default())
+
+	// Mark a record first.
+	nm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	m = nm.(tui.Model)
+	if len(m.Pending()) != 1 {
+		t.Fatal("space did not mark; setup failed")
+	}
+
+	// Now press q.
+	nm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	got := nm.(tui.Model)
+	if got.WantsApply() {
+		t.Error("q must not set WantsApply (cancel semantics)")
+	}
+}
+
+// TestModel_PendingDiffAppearsInRender uses teatest to verify the [P]>[-]
+// diff arrow is rendered in the Proxied column after a space mark.
+func TestModel_PendingDiffAppearsInRender(t *testing.T) {
+	m := tui.New(twoRecords(), slog.Default())
+	tm := teatest.NewTestModel(t, m, teatest.WithInitialTermSize(160, 40))
+	defer tm.Quit()
+
+	// Mark r1 (cursor starts at 0).
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+
+	// After space, the Proxied column for that row must show [P]>[-].
+	teatest.WaitFor(t, tm.Output(), func(b []byte) bool {
+		return bytes.Contains(b, []byte("[P]>[-]"))
+	}, teatest.WithDuration(3*time.Second))
+}

@@ -65,6 +65,34 @@ func ToggleProxy(
 		return result, nil
 	}
 
+	return ApplyToggle(ctx, appCtx, target, proxied, snapshotDir, auditPath)
+}
+
+// ApplyToggle performs the snapshot + API call + audit log sequence for a
+// pre-resolved record. It is the shared apply path used by both the CLI
+// `flareout toggle` subcommand (after selector resolution) and the TUI
+// multi-select flow (where the records are already in hand from the list).
+//
+// Caller is responsible for ensuring target.ZoneID and target.ZoneName are
+// populated; the adapter needs both.
+func ApplyToggle(
+	ctx context.Context,
+	appCtx *Context,
+	target domain.Record,
+	proxied bool,
+	snapshotDir, auditPath string,
+) (ToggleResult, error) {
+	diff := domain.Diff{
+		Record:      target,
+		FromProxied: target.Proxied,
+		ToProxied:   proxied,
+	}
+	result := ToggleResult{Diff: diff}
+
+	if diff.IsNoOp() {
+		return result, nil
+	}
+
 	// Snapshot BEFORE the mutation. If snapshot fails we abort without touching
 	// Cloudflare so the caller's recoverable state is intact.
 	snapPath, err := snapshot.Write(target, snapshotDir)
