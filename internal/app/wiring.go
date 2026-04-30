@@ -38,11 +38,17 @@ func Build(cfg Config) (*Context, error) {
 		return nil, fmt.Errorf("app.Build: %w", err)
 	}
 
+	toggler, err := cloudflare.NewRecordToggler(token)
+	if err != nil {
+		return nil, fmt.Errorf("app.Build: %w", err)
+	}
+
 	return &Context{
 		Logger:   logger,
 		Verifier: verifier,
 		Token:    token,
 		Version:  cfg.Version,
 		Lister:   lister,
+		Toggler:  toggler,
 	}, nil
 }

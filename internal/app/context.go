@@ -14,5 +14,6 @@ type Context struct {
 	Verifier domain.TokenVerifier
 	Token    string
 	Version  string
-	Lister   domain.RecordLister // set by app.Build via wiring.go; do not set elsewhere
+	Lister   domain.RecordLister  // set by app.Build via wiring.go; do not set elsewhere
+	Toggler  domain.RecordToggler // set by app.Build via wiring.go; do not set elsewhere
 }
