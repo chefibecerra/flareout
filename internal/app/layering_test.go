@@ -47,11 +47,13 @@ func TestAppLayerImportsAreClean(t *testing.T) {
 		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil // skip non-Go files and test files
 		}
-		// wiring.go (composition root) and toggle.go (snapshot+audit
-		// orchestration) are permitted to import infra. Exemption is by
-		// exact filename — "rewiring.go" or "untoggle.go" would NOT be exempt.
+		// wiring.go (composition root), toggle.go (snapshot+audit
+		// orchestration), undo.go and panic.go (same orchestration kind)
+		// are permitted to import infra. Exemption is by exact filename —
+		// "rewiring.go" or "untoggle.go" would NOT be exempt.
 		base := filepath.Base(path)
-		if base == "wiring.go" || base == "toggle.go" {
+		switch base {
+		case "wiring.go", "toggle.go", "undo.go", "panic.go":
 			return nil
 		}
 

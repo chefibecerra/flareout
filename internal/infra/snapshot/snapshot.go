@@ -67,3 +67,18 @@ func sanitize(s string) string {
 	}
 	return string(out)
 }
+
+// Read parses a snapshot file at path and returns the recorded domain.Record.
+// It is the inverse of Write — used by flareout-undo to recover the
+// pre-mutation state of a record.
+func Read(path string) (domain.Record, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return domain.Record{}, fmt.Errorf("snapshot: read: %w", err)
+	}
+	var rec domain.Record
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		return domain.Record{}, fmt.Errorf("snapshot: parse: %w", err)
+	}
+	return rec, nil
+}

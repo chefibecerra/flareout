@@ -5,6 +5,7 @@ package audit
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -61,4 +62,59 @@ func Append(entry Entry, path string) error {
 		return fmt.Errorf("audit: close: %w", err)
 	}
 	return nil
+}
+
+// LastApplied scans the audit log file and returns the most recent entry
+// with Applied=true. Returns (Entry{}, ErrNoAppliedEntry) if the file does
+// not exist, is empty, or contains no applied entries.
+//
+// The scan reads the whole file (audit logs are small for an interactive
+// tool — bounded by the number of toggles a single user makes). If the
+// file grows large enough that this matters, switch to reverse-line-reading.
+func LastApplied(path string) (Entry, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return Entry{}, ErrNoAppliedEntry
+		}
+		return Entry{}, fmt.Errorf("audit: read: %w", err)
+	}
+
+	var last Entry
+	var found bool
+	for _, line := range splitLines(raw) {
+		if len(line) == 0 {
+			continue
+		}
+		var e Entry
+		if err := json.Unmarshal(line, &e); err != nil {
+			continue // skip malformed lines silently — best-effort
+		}
+		if e.Applied {
+			last = e
+			found = true
+		}
+	}
+	if !found {
+		return Entry{}, ErrNoAppliedEntry
+	}
+	return last, nil
+}
+
+// ErrNoAppliedEntry indicates the audit log has no usable entry to undo.
+var ErrNoAppliedEntry = errors.New("audit: no applied entry found")
+
+func splitLines(raw []byte) [][]byte {
+	var lines [][]byte
+	start := 0
+	for i, b := range raw {
+		if b == '\n' {
+			lines = append(lines, raw[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(raw) {
+		lines = append(lines, raw[start:])
+	}
+	return lines
 }

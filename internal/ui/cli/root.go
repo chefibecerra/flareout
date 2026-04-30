@@ -66,6 +66,8 @@ func NewRootCmd(deps Dependencies) *cobra.Command {
 	root.AddCommand(NewVersionCmd(deps.Version))
 	root.AddCommand(NewListCmd(deps))
 	root.AddCommand(NewToggleCmd())
+	root.AddCommand(NewUndoCmd())
+	root.AddCommand(NewPanicCmd())
 
 	return root
 }
