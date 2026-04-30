@@ -1,0 +1,100 @@
+version: 2
+
+project_name: flareout
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: flareout
+    main: ./cmd/flareout
+    binary: flareout
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{ .Version }}
+
+archives:
+  - id: flareout
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: '{{ .Tag }}-snapshot'
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+      - '^ci:'
+      - '^test:'
+  groups:
+    - title: 'Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Other'
+      order: 999
+
+release:
+  github:
+    owner: chefibecerra
+    name: flareout
+  draft: false
+  prerelease: auto
+  name_template: '{{ .ProjectName }} {{ .Tag }}'
+  footer: |
+    ## Install
+
+    **macOS / Linux:**
+    ```
+    curl -fsSL https://raw.githubusercontent.com/chefibecerra/flareout/main/scripts/install.sh | sh
+    ```
+
+    or download a binary from the assets above and put it on your PATH.
+
+    **Go:**
+    ```
+    go install github.com/chefibecerra/flareout/cmd/flareout@{{ .Tag }}
+    ```
+
+# Homebrew tap is opt-in: uncomment after creating chefibecerra/homebrew-tap
+# and configuring HOMEBREW_TAP_GITHUB_TOKEN in repo secrets.
+# brews:
+#   - name: flareout
+#     repository:
+#       owner: chefibecerra
+#       name: homebrew-tap
+#     directory: Formula
+#     homepage: 'https://github.com/chefibecerra/flareout'
+#     description: 'Manage Cloudflare DNS proxy state with safety guardrails'
+#     license: 'Apache-2.0'
+#     install: |
+#       bin.install "flareout"
+#     test: |
+#       system "#{bin}/flareout", "version"
