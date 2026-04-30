@@ -1,5 +1,6 @@
 // wiring.go is the composition root: it imports infra adapters by design.
 // The layering test in internal/domain explicitly exempts this file.
+// The layering test in internal/app also exempts this file (by exact filename match).
 package app
 
 import (
@@ -32,10 +33,16 @@ func Build(cfg Config) (*Context, error) {
 		return nil, fmt.Errorf("app.Build: %w", err)
 	}
 
+	lister, err := cloudflare.NewRecordLister(token)
+	if err != nil {
+		return nil, fmt.Errorf("app.Build: %w", err)
+	}
+
 	return &Context{
 		Logger:   logger,
 		Verifier: verifier,
 		Token:    token,
 		Version:  cfg.Version,
+		Lister:   lister,
 	}, nil
 }

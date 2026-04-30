@@ -47,6 +47,15 @@ func WithBaseURL(url string) Option {
 	}
 }
 
+// WithMaxRetries overrides the SDK retry count. Default is 2 with exponential backoff.
+// Tests typically pass 0 to fail fast on network/timeout errors instead of waiting
+// for backoff between retry attempts.
+func WithMaxRetries(n int) Option {
+	return func(opts *[]option.RequestOption) {
+		*opts = append(*opts, option.WithMaxRetries(n))
+	}
+}
+
 // NewTokenVerifier constructs a CloudflareTokenVerifier with the given API token.
 // Additional options (e.g. WithBaseURL) are applied after the token option.
 func NewTokenVerifier(token string, opts ...Option) (*CloudflareTokenVerifier, error) {

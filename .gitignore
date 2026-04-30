@@ -40,10 +40,11 @@ Thumbs.db
 # Not part of the public project surface.
 .atl/
 
-# Archived SDD change history — kept locally for traceability and recovery,
-# but not part of the public-facing project documentation.
-# The canonical specs live in openspec/specs/ and openspec/config.yaml, which ARE committed.
-openspec/changes/archive/
+# SDD change folders — kept locally for traceability and recovery,
+# but not part of the public-facing project documentation. Both active and archived
+# changes are excluded; the canonical specs live in openspec/specs/ and the project
+# config in openspec/config.yaml, both of which ARE committed.
+openspec/changes/
 
 # go.sum must NOT be excluded — it is a security artifact
 # (do not add go.sum here)

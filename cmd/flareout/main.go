@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/chefibecerra/flareout/internal/app"
 	"github.com/chefibecerra/flareout/internal/infra/logging"
@@ -17,6 +20,9 @@ import (
 var Version = "dev"
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	slog.SetDefault(logging.Default())
 
 	deps := cli.Dependencies{
@@ -27,7 +33,11 @@ func main() {
 	}
 
 	root := cli.NewRootCmd(deps)
-	if err := root.ExecuteContext(context.Background()); err != nil {
+	if err := root.ExecuteContext(ctx); err != nil {
+		if errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, "flareout: aborted")
+			os.Exit(130)
+		}
 		fmt.Fprintln(os.Stderr, "flareout:", err)
 		os.Exit(1)
 	}
