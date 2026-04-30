@@ -85,10 +85,14 @@ Token scope required: Zone:Edit + DNS:Edit.`,
 			result, applyErr := app.PanicApplyZone(cmd.Context(), appCtx, summary, snapDir, auditPath)
 
 			var ok2, fail int
+			var sawAuthError bool
 			for _, r := range result.Results {
 				if r.Err != nil {
 					fail++
-					_, _ = fmt.Fprintf(out, "  FAIL %s/%s: %v\n", r.Record.ZoneName, r.Record.Name, r.Err)
+					if is403Auth(r.Err.Error()) {
+						sawAuthError = true
+					}
+					FailLine(out, r.Record.ZoneName, r.Record.Name, r.Err)
 				} else {
 					ok2++
 					_, _ = fmt.Fprintf(out, "  OK   %s/%s now proxied=false\n", r.Record.ZoneName, r.Record.Name)
@@ -96,6 +100,10 @@ Token scope required: Zone:Edit + DNS:Edit.`,
 			}
 			_, _ = fmt.Fprintf(out, "PANIC SUMMARY: %d ok, %d failed (out of %d)\n",
 				ok2, fail, len(result.Results))
+
+			if sawAuthError {
+				PrintError(out, errFailedAuthHint)
+			}
 
 			return applyErr
 		},

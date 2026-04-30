@@ -38,7 +38,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "flareout: aborted")
 			os.Exit(130)
 		}
-		fmt.Fprintln(os.Stderr, "flareout:", err)
+		cli.PrintError(os.Stderr, err)
 		os.Exit(1)
 	}
 }

@@ -122,14 +122,22 @@ func promptAndApplyPending(
 	}
 
 	var failures int
+	var sawAuthError bool
 	for _, item := range plan {
 		_, applyErr := app.ApplyToggle(ctx, appCtx, item.Record, item.Desired, snapshotDir, auditPath)
 		if applyErr != nil {
 			failures++
-			_, _ = fmt.Fprintf(out, "  FAIL %s/%s: %v\n", item.Record.ZoneName, item.Record.Name, applyErr)
+			if is403Auth(applyErr.Error()) {
+				sawAuthError = true
+			}
+			FailLine(out, item.Record.ZoneName, item.Record.Name, applyErr)
 			continue
 		}
 		_, _ = fmt.Fprintf(out, "  OK   %s/%s now proxied=%v\n", item.Record.ZoneName, item.Record.Name, item.Desired)
+	}
+
+	if sawAuthError {
+		PrintError(out, errFailedAuthHint)
 	}
 
 	if failures > 0 && failures == len(plan) {
@@ -137,6 +145,12 @@ func promptAndApplyPending(
 	}
 	return nil
 }
+
+// errFailedAuthHint is reused at the end of bulk runs to print the
+// classify-able auth-error hint exactly once after a per-record FAIL line
+// streak. It is a sentinel error whose message is what classify() matches
+// on for the auth-pattern hint.
+var errFailedAuthHint = errors.New("403 Authentication error 10000")
 
 // planItem pairs a target record with its desired proxied state.
 type planItem struct {
